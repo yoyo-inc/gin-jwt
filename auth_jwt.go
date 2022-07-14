@@ -151,6 +151,8 @@ type GinJWTMiddleware struct {
 
 	// CookieSameSite allow use http.SameSite cookie param
 	CookieSameSite http.SameSite
+
+	Whitelist map[string]interface{}
 }
 
 var (
@@ -401,7 +403,17 @@ func (mw *GinJWTMiddleware) MiddlewareInit() error {
 	if mw.Key == nil {
 		return ErrMissingSecretKey
 	}
+
+	if mw.Whitelist == nil {
+		mw.Whitelist = make(map[string]interface{})
+	}
 	return nil
+}
+
+func (mw *GinJWTMiddleware) AddIgnore(urls ...string) {
+	for _, url := range urls {
+		mw.Whitelist[url] = nil
+	}
 }
 
 // MiddlewareFunc makes GinJWTMiddleware implement the Middleware interface.
@@ -412,6 +424,11 @@ func (mw *GinJWTMiddleware) MiddlewareFunc() gin.HandlerFunc {
 }
 
 func (mw *GinJWTMiddleware) middlewareImpl(c *gin.Context) {
+	if _, ok := mw.Whitelist[c.Request.URL.Path]; ok {
+		c.Next()
+		return
+	}
+
 	claims, err := mw.GetClaimsFromJWT(c)
 	if err != nil {
 		mw.unauthorized(c, http.StatusUnauthorized, mw.HTTPStatusMessageFunc(err, c))
@@ -480,7 +497,7 @@ func (mw *GinJWTMiddleware) LoginHandler(c *gin.Context) {
 
 	data, err := mw.Authenticator(c)
 	if err != nil {
-		mw.unauthorized(c, http.StatusUnauthorized, mw.HTTPStatusMessageFunc(err, c))
+		mw.unauthorized(c, http.StatusOK, mw.HTTPStatusMessageFunc(err, c))
 		return
 	}
 
@@ -499,7 +516,7 @@ func (mw *GinJWTMiddleware) LoginHandler(c *gin.Context) {
 	claims["orig_iat"] = mw.TimeFunc().Unix()
 	tokenString, err := mw.signedString(token)
 	if err != nil {
-		mw.unauthorized(c, http.StatusUnauthorized, mw.HTTPStatusMessageFunc(ErrFailedTokenCreation, c))
+		mw.unauthorized(c, http.StatusOK, mw.HTTPStatusMessageFunc(ErrFailedTokenCreation, c))
 		return
 	}
 

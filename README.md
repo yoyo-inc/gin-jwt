@@ -22,7 +22,7 @@ Download and install using [go module](https://blog.golang.org/using-go-modules)
 
 ```sh
 export GO111MODULE=on
-go get github.com/appleboy/gin-jwt/v2
+go get github.com/yoyo-inc/gin-jwt/v3
 ```
 
 Import it in your code:

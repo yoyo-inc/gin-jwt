@@ -152,7 +152,7 @@ type GinJWTMiddleware struct {
 	// CookieSameSite allow use http.SameSite cookie param
 	CookieSameSite http.SameSite
 
-	Whitelist map[string]interface{}
+	Whitelist node
 }
 
 var (
@@ -404,15 +404,12 @@ func (mw *GinJWTMiddleware) MiddlewareInit() error {
 		return ErrMissingSecretKey
 	}
 
-	if mw.Whitelist == nil {
-		mw.Whitelist = make(map[string]interface{})
-	}
 	return nil
 }
 
 func (mw *GinJWTMiddleware) AddIgnore(urls ...string) {
 	for _, url := range urls {
-		mw.Whitelist[url] = nil
+		mw.Whitelist.addRoute(url, func() {})
 	}
 }
 
@@ -424,7 +421,7 @@ func (mw *GinJWTMiddleware) MiddlewareFunc() gin.HandlerFunc {
 }
 
 func (mw *GinJWTMiddleware) middlewareImpl(c *gin.Context) {
-	if _, ok := mw.Whitelist[c.Request.URL.Path]; ok {
+	if _, ok := mw.Whitelist.findCaseInsensitivePath(c.Request.URL.Path, true); ok {
 		c.Next()
 		return
 	}

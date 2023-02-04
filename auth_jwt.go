@@ -299,6 +299,14 @@ func (mw *GinJWTMiddleware) usingPublicKeyAlgo() bool {
 	return false
 }
 
+func (mw *GinJWTMiddleware) getTimeout() time.Duration {
+	if mw.GetTimeout != nil {
+		return mw.GetTimeout()
+	}
+
+	return mw.Timeout
+}
+
 // MiddlewareInit initialize jwt configs.
 func (mw *GinJWTMiddleware) MiddlewareInit() error {
 	if mw.TokenLookup == "" {
@@ -391,7 +399,7 @@ func (mw *GinJWTMiddleware) MiddlewareInit() error {
 	}
 
 	if mw.CookieMaxAge == 0 {
-		mw.CookieMaxAge = mw.Timeout
+		mw.CookieMaxAge = mw.getTimeout()
 	}
 
 	if mw.CookieName == "" {
@@ -515,7 +523,7 @@ func (mw *GinJWTMiddleware) LoginHandler(c *gin.Context) {
 		}
 	}
 
-	expire := mw.TimeFunc().Add(mw.Timeout)
+	expire := mw.TimeFunc().Add(mw.getTimeout())
 	claims["exp"] = expire.Unix()
 	claims["orig_iat"] = mw.TimeFunc().Unix()
 	tokenString, err := mw.signedString(token)
@@ -608,7 +616,7 @@ func (mw *GinJWTMiddleware) RefreshToken(c *gin.Context) (string, time.Time, err
 		newClaims[key] = claims[key]
 	}
 
-	expire := mw.TimeFunc().Add(mw.Timeout)
+	expire := mw.TimeFunc().Add(mw.getTimeout())
 	newClaims["exp"] = expire.Unix()
 	newClaims["orig_iat"] = mw.TimeFunc().Unix()
 	tokenString, err := mw.signedString(newToken)
@@ -676,7 +684,7 @@ func (mw *GinJWTMiddleware) TokenGenerator(data interface{}) (string, time.Time,
 		}
 	}
 
-	expire := mw.TimeFunc().UTC().Add(mw.Timeout)
+	expire := mw.TimeFunc().UTC().Add(mw.getTimeout())
 	claims["exp"] = expire.Unix()
 	claims["orig_iat"] = mw.TimeFunc().Unix()
 	tokenString, err := mw.signedString(token)

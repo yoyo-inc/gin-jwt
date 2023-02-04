@@ -39,6 +39,9 @@ type GinJWTMiddleware struct {
 	// Duration that a jwt token is valid. Optional, defaults to one hour.
 	Timeout time.Duration
 
+	// Return token timeout
+	GetTimeout func() time.Duration
+
 	// This field allows clients to refresh their token until MaxRefresh has passed.
 	// Note that clients can refresh their token in the last moment of MaxRefresh.
 	// This means that the maximum validity timespan for a token is TokenTime + MaxRefresh.
@@ -308,6 +311,10 @@ func (mw *GinJWTMiddleware) MiddlewareInit() error {
 
 	if mw.Timeout == 0 {
 		mw.Timeout = time.Hour
+	}
+
+	if mw.GetTimeout != nil {
+		mw.Timeout = mw.GetTimeout()
 	}
 
 	if mw.TimeFunc == nil {
